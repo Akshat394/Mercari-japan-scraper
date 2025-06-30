@@ -35,10 +35,25 @@ This project is a Python-based AI agent and web application for searching, scrap
    python -m streamlit run streamlit_app.py
    ```
 
+## LLM Provider Setup
+
+To use the AI Assistant features, you can choose between OpenAI and OpenRouter as the LLM provider. The app supports both, with a UI toggle and automatic fallback if one fails.
+
+Set the following environment variables (e.g., in your Streamlit Cloud or local .env):
+
+- `OPENAI_API_KEY` — Your OpenAI API key (https://platform.openai.com/)
+- `OPENROUTER_API_KEY` — Your OpenRouter API key (https://openrouter.ai/)
+- `OPENROUTER_BASE_URL` — (Optional, defaults to `https://openrouter.ai/api/v1`)
+
 ## Usage Instructions
 - Use the web UI to search, filter, and browse products.
 - The search bar supports real-time keyword search.
 - Filter by category, SEO tags, price, and more.
+
+## Usage Instructions (AI Assistant)
+- Enable the "AI Assistant" checkbox in the UI to use LLM-powered search and recommendations.
+- Select your preferred LLM provider (OpenAI or OpenRouter) from the sidebar.
+- If the selected provider fails (e.g., quota exceeded), the app will automatically try the other provider.
 
 ## Design Choices
 - **Scraping:** Uses `mercapi` for robust, API-like scraping of Mercari Japan.
