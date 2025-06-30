@@ -1,17 +1,18 @@
 import os
 import openai
-from googletrans import Translator
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-translator = Translator()
-
-# Translate text between English and Japanese
+# Translate text between English and Japanese using OpenAI
 def translate_text(text, dest_lang):
-    if dest_lang not in ["en", "ja"]:
-        raise ValueError("dest_lang must be 'en' or 'ja'")
-    result = translator.translate(text, dest=dest_lang)
-    return result.text
+    prompt = f"Translate the following text to {'Japanese' if dest_lang == 'ja' else 'English'}:\n{text}"
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-0125",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=256,
+    )
+    return response.choices[0].message.content.strip()
 
 # Use OpenAI to extract search intent and filters from a user query
 def extract_search_intent(user_query, language="en"):
