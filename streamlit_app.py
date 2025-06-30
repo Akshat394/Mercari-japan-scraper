@@ -18,6 +18,17 @@ search_term = st.text_input("🔎 Search for products", "")
 # AI Assistant toggle
 use_ai = st.checkbox("🤖 AI Assistant (LLM-powered search & recommendations)")
 
+# LLM provider selection (only visible if AI Assistant is enabled)
+if use_ai:
+    provider = st.sidebar.radio(
+        "LLM Provider",
+        ["openai", "openrouter"],
+        format_func=lambda x: "OpenAI" if x == "openai" else "OpenRouter",
+        index=0
+    )
+else:
+    provider = None
+
 st.title("🛍️ Mercari Product Explorer")
 
 products = []
@@ -27,7 +38,7 @@ llm_reasoning = None
 if use_ai and search_term:
     with st.spinner("AI is understanding your request and searching..."):
         try:
-            intent_json = extract_search_intent(search_term)
+            intent_json = extract_search_intent(search_term, provider=provider)
             intent = json.loads(intent_json)
             # Priority: tags > keywords
             if intent.get("tags"):
@@ -42,7 +53,7 @@ if use_ai and search_term:
                 max_p = intent.get("max_price", 1e9)
                 products = [p for p in products if min_p <= p["price"] <= max_p]
             if products:
-                rec_json = recommend_products(products[:10], search_term)
+                rec_json = recommend_products(products[:10], search_term, provider=provider)
                 recommendations = json.loads(rec_json)
         except Exception as e:
             st.error(f"AI Assistant error: {e}")
