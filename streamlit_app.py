@@ -1,5 +1,5 @@
 import streamlit as st
-from query import get_products_by_tags, get_products_by_category, search_products_by_title
+from query import get_products_by_tags, search_products_by_title
 from llm_agent import extract_search_intent, recommend_products, translate_text
 import json
 import os
@@ -8,7 +8,6 @@ st.set_page_config(layout="wide", page_title="🛒 Mercari Product Explorer")
 
 st.sidebar.title("🔍 Filter Products")
 
-category = st.sidebar.text_input("Category")
 tag_filter = st.sidebar.multiselect("SEO Tags", ["apple", "android", "smartphone", "gaming", "bag", "audio"])
 min_price, max_price = st.sidebar.slider("Price Range", 0, 50000, (0, 20000))
 min_rating = st.sidebar.slider("Min Seller Rating", 0.0, 5.0, 0.0, 0.1)
@@ -27,28 +26,21 @@ llm_reasoning = None
 
 if use_ai and search_term:
     with st.spinner("AI is understanding your request and searching..."):
-        # 1. Extract search intent from user query
         try:
             intent_json = extract_search_intent(search_term)
             intent = json.loads(intent_json)
-            # 2. Use extracted parameters to search
-            # Priority: tags > category > keywords
+            # Priority: tags > keywords
             if intent.get("tags"):
                 products = get_products_by_tags(intent["tags"], limit=30)
-            elif intent.get("category"):
-                products = get_products_by_category(intent["category"], limit=30)
             elif intent.get("keywords"):
-                # Use first keyword for title search, or join for broader
                 kw = " ".join(intent["keywords"])
                 products = search_products_by_title(kw, limit=30)
             else:
                 products = search_products_by_title("", limit=30)
-            # 3. Filter by price if specified
             if intent.get("min_price") or intent.get("max_price"):
                 min_p = intent.get("min_price", 0)
                 max_p = intent.get("max_price", 1e9)
                 products = [p for p in products if min_p <= p["price"] <= max_p]
-            # 4. LLM recommendations
             if products:
                 rec_json = recommend_products(products[:10], search_term)
                 recommendations = json.loads(rec_json)
@@ -58,8 +50,6 @@ else:
     # Classic search logic
     if search_term:
         products = search_products_by_title(search_term)
-    elif category:
-        products = get_products_by_category(category)
     elif tag_filter:
         products = get_products_by_tags(tag_filter)
     else:
