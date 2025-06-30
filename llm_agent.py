@@ -16,6 +16,12 @@ def get_client(provider):
     # Default to OpenAI
     return OpenAI(api_key=OPENAI_API_KEY)
 
+# Helper to get model name for each provider
+def get_model_name(provider):
+    if provider == "openrouter":
+        return "openai/gpt-3.5-turbo"
+    return "gpt-3.5-turbo-0125"
+
 # Fallback logic: try primary, then secondary provider
 def call_with_fallback(fn, *args, provider="openai", **kwargs):
     providers = [provider, "openrouter" if provider == "openai" else "openai"]
@@ -32,9 +38,10 @@ def call_with_fallback(fn, *args, provider="openai", **kwargs):
 def translate_text(text, dest_lang, provider="openai"):
     def _translate(text, dest_lang, provider):
         client = get_client(provider)
+        model = get_model_name(provider)
         prompt = f"Translate the following text to {'Japanese' if dest_lang == 'ja' else 'English'}:\n{text}"
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo-0125",
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             max_tokens=256,
@@ -46,6 +53,7 @@ def translate_text(text, dest_lang, provider="openai"):
 def extract_search_intent(user_query, language="en", provider="openai"):
     def _extract(user_query, language, provider):
         client = get_client(provider)
+        model = get_model_name(provider)
         system_prompt = (
             "You are a shopping assistant for Mercari Japan. "
             "Given a user's request, extract the following as JSON: "
@@ -62,7 +70,7 @@ def extract_search_intent(user_query, language="en", provider="openai"):
             {"role": "user", "content": user_query}
         ]
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo-0125",
+            model=model,
             messages=messages,
             temperature=0.2,
             max_tokens=256,
@@ -75,6 +83,7 @@ def extract_search_intent(user_query, language="en", provider="openai"):
 def recommend_products(products, user_query, language="en", provider="openai"):
     def _recommend(products, user_query, language, provider):
         client = get_client(provider)
+        model = get_model_name(provider)
         system_prompt = (
             "You are a helpful shopping assistant for Mercari Japan. "
             "Given a user's request and a list of products (as JSON), select the top 3 that best match the user's needs. "
@@ -86,7 +95,7 @@ def recommend_products(products, user_query, language="en", provider="openai"):
             {"role": "user", "content": f"User request: {user_query}\nProducts: {products}"}
         ]
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo-0125",
+            model=model,
             messages=messages,
             temperature=0.3,
             max_tokens=512,
