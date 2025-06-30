@@ -1,12 +1,12 @@
 import os
-import openai
+from openai import OpenAI
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # Translate text between English and Japanese using OpenAI
 def translate_text(text, dest_lang):
     prompt = f"Translate the following text to {'Japanese' if dest_lang == 'ja' else 'English'}:\n{text}"
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
@@ -31,7 +31,7 @@ def extract_search_intent(user_query, language="en"):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_query}
     ]
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
         temperature=0.2,
@@ -52,7 +52,7 @@ def recommend_products(products, user_query, language="en"):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"User request: {user_query}\nProducts: {products}"}
     ]
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
         temperature=0.3,
