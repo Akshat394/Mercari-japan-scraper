@@ -1,5 +1,8 @@
 import streamlit as st
 from query import get_products_by_tags, get_products_by_category, search_products_by_title
+from llm_agent import extract_search_intent, recommend_products, translate_text
+import json
+import os
 
 st.set_page_config(layout="wide", page_title="🛒 Mercari Product Explorer")
 
@@ -13,20 +16,68 @@ min_rating = st.sidebar.slider("Min Seller Rating", 0.0, 5.0, 0.0, 0.1)
 # Add a search bar at the top of the main page
 search_term = st.text_input("🔎 Search for products", "")
 
+# AI Assistant toggle
+use_ai = st.checkbox("🤖 AI Assistant (LLM-powered search & recommendations)")
+
 st.title("🛍️ Mercari Product Explorer")
 
-# Search logic: prioritize search bar, then category, then tags
-if search_term:
-    products = search_products_by_title(search_term)
-elif category:
-    products = get_products_by_category(category)
-elif tag_filter:
-    products = get_products_by_tags(tag_filter)
+products = []
+recommendations = []
+llm_reasoning = None
+
+if use_ai and search_term:
+    with st.spinner("AI is understanding your request and searching..."):
+        # 1. Extract search intent from user query
+        try:
+            intent_json = extract_search_intent(search_term)
+            intent = json.loads(intent_json)
+            # 2. Use extracted parameters to search
+            # Priority: tags > category > keywords
+            if intent.get("tags"):
+                products = get_products_by_tags(intent["tags"], limit=30)
+            elif intent.get("category"):
+                products = get_products_by_category(intent["category"], limit=30)
+            elif intent.get("keywords"):
+                # Use first keyword for title search, or join for broader
+                kw = " ".join(intent["keywords"])
+                products = search_products_by_title(kw, limit=30)
+            else:
+                products = search_products_by_title("", limit=30)
+            # 3. Filter by price if specified
+            if intent.get("min_price") or intent.get("max_price"):
+                min_p = intent.get("min_price", 0)
+                max_p = intent.get("max_price", 1e9)
+                products = [p for p in products if min_p <= p["price"] <= max_p]
+            # 4. LLM recommendations
+            if products:
+                rec_json = recommend_products(products[:10], search_term)
+                recommendations = json.loads(rec_json)
+        except Exception as e:
+            st.error(f"AI Assistant error: {e}")
 else:
-    products = search_products_by_title("")
+    # Classic search logic
+    if search_term:
+        products = search_products_by_title(search_term)
+    elif category:
+        products = get_products_by_category(category)
+    elif tag_filter:
+        products = get_products_by_tags(tag_filter)
+    else:
+        products = search_products_by_title("")
 
+# Show recommendations if AI Assistant is enabled
+if use_ai and recommendations:
+    st.subheader("🤖 Top 3 AI Recommendations")
+    for rec in recommendations:
+        st.markdown(f"**{rec['title']}**  ")
+        st.markdown(f"💴 ¥{rec['price']}")
+        st.markdown(f"📝 {rec['reason']}")
+        st.link_button("View on Mercari", rec["url"])
+        st.markdown("---")
+    st.subheader("Other Matching Products")
+
+# Show product cards
 cols = st.columns(3)
-
 for idx, product in enumerate(products):
     with cols[idx % 3]:
         st.image(product["image_url"], width=180)
