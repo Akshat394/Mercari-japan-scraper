@@ -19,7 +19,7 @@ def get_client(provider):
 # Helper to get model name for each provider
 def get_model_name(provider):
     if provider == "openrouter":
-        return "openai/gpt-3.5-turbo"
+        return "mistralai/mistral-small-3.2-24b-instruct:free"
     return "gpt-3.5-turbo-0125"
 
 # Fallback logic: try primary, then secondary provider
